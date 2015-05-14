@@ -6,6 +6,7 @@ import time
 import cPickle as pickle
 from scipy.linalg import hankel
 from ggplot import *
+from scipy.fftpack import fft
 
 import matplotlib.pyplot as plt
 
@@ -40,7 +41,6 @@ def rep_sep_classes(df):
 def shift(key, array):
     return array[-key:]+array[:-key]
 
-# def plot_segment(values, title_y, activity_class):
 def plot_segment(values):
 
     ids = xrange(len(values))
@@ -58,7 +58,6 @@ def apply_svd(df, segLength, countSVD, num_max_elems):
     arrx = df["x_acc"]
     arry = df["y_acc"]
     arrz = df["z_acc"]
-
     # inds = pd.isnull(df).any(1).nonzero()[0]
     # print inds
 
@@ -80,7 +79,6 @@ def apply_svd(df, segLength, countSVD, num_max_elems):
     arrx = arrx.tolist()
     arry = arry.tolist()
     arrz = arrz.tolist()
-
 
     x = []
     y = []
@@ -118,13 +116,16 @@ def apply_svd(df, segLength, countSVD, num_max_elems):
                 y1 = get_svd(maty, num_max_elems)
                 z1 = get_svd(matz, num_max_elems)
 
+                # create_features(np.array(arrx[k:(k + segLength - 1)]), arr_type[k])
+                # create_features(x1, arr_type[k])
+                # print x1
+
                 x.append(x1)
+                # print type(x), type(x[0])
                 y.append(y1)
                 z.append(z1)
                 # print "X: \n%s\n" % x
 
-                # y = [y, y1']
-                # z = [z, z1']
                 answ1.append(arr_type[k])
                 # print answ1
 
@@ -132,9 +133,14 @@ def apply_svd(df, segLength, countSVD, num_max_elems):
                 print k
                 # raw_input("PRESS ENTER TO CONTINUE.")
 
-    output = open('data.pkl', 'wb')
-    pickle.dump((x, y, z, answ1), output, 2)
-    output.close()
+    # print len(x), type(x), len(x[0]), type(x[0])
+    # raw_input("PRESS ENTER TO CONTINUE.")
+
+    with open("data_200_1_3.pkl", "wb") as output:
+        pickle.dump((x, y, z, answ1), output, 2)
+
+    # with open("data1.pkl", "wb") as output:
+    #     pickle.dump(x, output, 2)
 
     # with open("data.pkl", "wb") as output:
     #     pickle.dump((x, y, z, answ1), output, 2)
@@ -200,11 +206,75 @@ def plot_unique_segments():
         plot_segment(y[i])
         plot_segment(z[i])
 
+def create_features(ts, act_type):
+    # with open("data_200_1_3.pkl", "rb") as output:
+    #     x, y, z, answ1 = pickle.load(output)
+    #     output.close()
+    #
+    # a = x[0][10:100]
+
+    a = ts
+    # print type(a)
+    # with open("data_part.pkl", "wb") as output:
+    #     pickle.dump(a, output, 2)
+    #     output.close()
+
+    featVector = []
+
+    featVector.extend((np.mean(a), # mean
+                       np.mean(abs(a)), # mean of absolute values
+                       sum(abs(np.diff(a))), # sum of absolute difference between consequent elements
+                       np.ptp(a) # difference between max and mean
+    ))
+    # print a
+    # print featVector
+
+    # class_list = ["Walking","Jogging","Sitting","Standing","Upstairs","Downstairs"]
+
+    # signal = np.fft.rfft(a)
+    # step = 1
+    # freq = np.fft.rfftfreq(len(a), step)
+    #
+    # plt.subplot(2,1,1)
+    # plt.plot(a)
+    # plt.title(class_list[act_type-1])
+    # plt.xlabel('Series')
+    #
+    # plt.subplot(2,1,2)
+    # plt.plot(freq, np.abs(signal))
+    # plt.xlabel('Frequency')
+    # plt.show()
+    #
+    # max_freq_idx = np.abs(signal).argsort()[-2:]
+    # print 1/freq[max_freq_idx]
+
+def find_period (g):
+    # matx = Gankel(g', 4, 1);
+    # g1 = matx(1, :)
+    # g2 = matx(2, :)
+    # period = 0;
+    # idxcut = [0];
+    # for k = [2:1:27]
+    #     if (g1(k)/g2(k) - 1)*(g1(k + 1)/g2(k + 1) - 1) < 0
+    #         period = period + 1;
+    #     end
+    #     if period > 2
+    #         idxcut = [idxcut, k - idxcut(end)];
+    #     period = 0;
+    #     end
+    # end
+    # period = sum(idxcut)/length(idxcut);
+    pass
+
+# def print_series():
+
+
 Location = './my_data.csv'
 data = read_data(Location)
 data, labels = rep_sep_classes(data)
-apply_svd(data, 200, 0, 3)
-plot_unique_segments()
+apply_svd(data, 200, 1, 3)
+# plot_unique_segments()
+# create_features()
 
 # with open("data.pkl", "rb") as output:
 #     x, answ1 = pickle.load(output)
