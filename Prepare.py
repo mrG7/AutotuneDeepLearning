@@ -126,9 +126,6 @@ def apply_svd(df, segLength, countSVD, num_max_elems):
                 print "%s-th segment has been processed..." % k
                 # pause()
 
-    # print len(x), type(x), len(x[0]), type(x[0])
-    # pause()
-
     filename = "data_%s_%s_%s.pkl" %(segLength, countSVD, num_max_elems)
     save_to_file((x, y, z, answ1), filename)
 
@@ -162,71 +159,55 @@ def plot_unique_segments(filename):
     for i in indices:
         print i
         plot_smoothed_segment(x[i])
-        # plot_smoothed_segment(y[i])
-        # plot_smoothed_segment(z[i])
+        plot_smoothed_segment(y[i])
+        plot_smoothed_segment(z[i])
 
 def calc_seg_features(ts):
+    x, y, z = ts
     featVector = []
-    featVector.extend((np.mean(ts), # mean
-                       np.mean(abs(ts)), # mean of absolute values
-                       sum(abs(np.diff(ts))), # sum of absolute difference between consequent elements
-                       np.ptp(ts) # difference between max and mean
-    ))
+
+    # acceleration mean
+    featVector.extend( ( np.mean(x), np.mean(y), np.mean(z) ) )
+
+    # acceleration std
+    featVector.extend( ( np.std(x), np.std(y), np.std(z) ) )
+
+    # acceleration average absolute difference
+    featVector.append( np.mean( np.absolute( np.diff(x) ) ) )
+    featVector.append( np.mean( np.absolute( np.diff(y) ) ) )
+    featVector.append( np.mean( np.absolute( np.diff(z) ) ) )
+
+    # average resultant acceleration
+    featVector.append( np.sqrt( np.power(x,2) + np.power(y,2) + np.power(z,2) ).mean() )
+
+    # bins fraction
+    bins_x = np.divide(np.histogram(x)[0], len(x), dtype = np.float64).tolist()
+    bins_y = np.divide(np.histogram(y)[0], len(y), dtype = np.float64).tolist()
+    bins_z = np.divide(np.histogram(z)[0], len(z), dtype = np.float64).tolist()
+    featVector.extend( bins_x + bins_y + bins_z )
+
     return featVector
 
 def create_features():
 
     x, y, z, answ1 = load_from_file("data_200_1_3.pkl")
-    # def create_features(ts, act_type):
 
-    ts_features = []
+    df_data = []
+    for i in xrange(len(x)):
+        ts = (x[i], y[i], z[i])
+        df_row = calc_seg_features(ts)
+        df_data.append(df_row)
+    df = pd.DataFrame(df_data)
 
-    a = x[2]
-    # print type(a)
-    # with open("data_part.pkl", "wb") as output:
-    #     pickle.dump(a, output, 2)
-
-    # for i in xrange(len(x)):
-    #     feat_x = calc_seg_features(x[i])
-    #     feat_y = calc_seg_features(y[i])
-    #     feat_z = calc_seg_features(z[i])
-    #
-    #     ts_features.append(np.array(feat_x + feat_y + feat_z))
-    #     # print ts_features
-    #     # pause()
-    #
-    # print len(ts_features)
-
-
-    # print a
-    # print featVector
-
-    class_list = ["Walking","Jogging","Sitting","Standing","Upstairs","Downstairs"]
-    #
-    # plt.subplot(2,1,1)
-    # plt.plot(a)
-    # plt.title(class_list[act_type-1])
-    # plt.xlabel('Series')
-    #
-    # plt.subplot(2,1,2)
-    # plt.plot(freq, np.abs(signal))
-    # plt.xlabel('Frequency')
-    # plt.show()
-    #
-    # max_freq_idx = np.abs(signal).argsort()[-2:]
-    # print 1/freq[max_freq_idx]
-
-    # with open("data_features.pkl", "wb") as output:
-    #     pickle.dump((x, y, z, answ1), output, 2)
-
-# def print_series():
+    return df
 
 def main():
     Location = './my_data.csv'
     data = read_data(Location)
-    # data, labels = rep_sep_classes(data)
-    # filename = apply_svd(data, 200, 1, 3)
-    plot_unique_segments("data_200_1_3.pkl")
-    # create_features()
+    data, labels = rep_sep_classes(data)
+    filename = apply_svd(data, 200, 1, 3)
+    # plot_unique_segments(filename)
+    df = create_features(filename)
+
 
 main()
