@@ -20,12 +20,11 @@ References:
 """
 __docformat__ = 'restructedtext en'
 
-
 import os
 import sys
 import time
 
-import numpy
+import numpy as np
 
 import theano
 import theano.tensor as T
@@ -44,14 +43,11 @@ def shared_dataset(data_xy, borrow=True):
         variable) would lead to a large decrease in performance.
         """
         data_x, data_y = data_xy
-        # print type(data_y)
-        # print type(data_x)
-        # print data_y.shape
-        # print data_x.shape
-        shared_x = theano.shared(numpy.asarray(data_x,
+
+        shared_x = theano.shared(np.asarray(data_x,
                                                dtype=theano.config.floatX),
                                  borrow=borrow)
-        shared_y = theano.shared(numpy.asarray(data_y,
+        shared_y = theano.shared(np.asarray(data_y,
                                                dtype=theano.config.floatX),
                                  borrow=borrow)
         # When storing data on the GPU it has to be stored as floats
@@ -72,9 +68,12 @@ def load_from_file(filename):
         data = pickle.load(output)
     return data
 
+def pause():
+    raw_input("PRESS ENTER TO CONTINUE.")
+
 # start-snippet-1
 class HiddenLayer(object):
-    def __init__(self, rng, input, n_in, n_out, W=None, b=None,
+    def __init__(self, rng, input, n_in, n_out, W_coef=1, W=None, b=None,
                  activation=T.tanh):
         """
         Typical hidden layer of a MLP: units are fully-connected and have
@@ -117,10 +116,10 @@ class HiddenLayer(object):
         #        We have no info for other function, so we use the same as
         #        tanh.
         if W is None:
-            W_values = numpy.asarray(
+            W_values = np.asarray(
                 rng.uniform(
-                    low=-numpy.sqrt(6. / (n_in + n_out)),
-                    high=numpy.sqrt(6. / (n_in + n_out)),
+                    low=-np.sqrt(6. / (n_in + n_out)),
+                    high=np.sqrt(6. / (n_in + n_out)),
                     size=(n_in, n_out)
                 ),
                 dtype=theano.config.floatX
@@ -128,10 +127,10 @@ class HiddenLayer(object):
             if activation == theano.tensor.nnet.sigmoid:
                 W_values *= 4
 
-            W = theano.shared(value=W_values, name='W', borrow=True)
+            W = theano.shared(value=W_values*W_coef, name='W', borrow=True)
 
         if b is None:
-            b_values = numpy.zeros((n_out,), dtype=theano.config.floatX)
+            b_values = np.zeros((n_out,), dtype=theano.config.floatX)
             b = theano.shared(value=b_values, name='b', borrow=True)
 
         self.W = W
@@ -144,7 +143,6 @@ class HiddenLayer(object):
         )
         # parameters of the model
         self.params = [self.W, self.b]
-
 
 # start-snippet-2
 class MLP(object):
@@ -185,7 +183,7 @@ class MLP(object):
         # into a HiddenLayer with a tanh activation function connected to the
         # LogisticRegression layer; the activation function can be replaced by
         # sigmoid or any other nonlinear function
-        self.hiddenLayer0 = HiddenLayer(
+        self.hiddenLayer = HiddenLayer(
             rng=rng,
             input=input,
             n_in=n_in,
@@ -193,21 +191,21 @@ class MLP(object):
             activation=T.tanh
         )
 
-        self.hiddenLayer1 = HiddenLayer(
-            rng=rng,
-            input=self.hiddenLayer0.output,
-            n_in=n_hidden,
-            n_out=n_hidden,
-            activation=T.tanh
-        )
-
-        self.hiddenLayer2 = HiddenLayer(
-            rng=rng,
-            input=self.hiddenLayer1.output,
-            n_in=n_hidden,
-            n_out=n_hidden,
-            activation=T.tanh
-        )
+        # self.hiddenLayer1 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer0.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
+        #
+        # self.hiddenLayer2 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer1.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
 
         # self.hiddenLayer3 = HiddenLayer(
         #     rng=rng,
@@ -236,7 +234,7 @@ class MLP(object):
         # The logistic regression layer gets as input the hidden units
         # of the hidden layer
         self.logRegressionLayer = LogisticRegression(
-            input=self.hiddenLayer2.output,
+            input=self.hiddenLayer.output,
             n_in=n_hidden,
             n_out=n_out
         )
@@ -244,14 +242,14 @@ class MLP(object):
         # L1 norm ; one regularization option is to enforce L1 norm to
         # be small
         self.L1 = (
-            abs(self.hiddenLayer2.W).sum()
+            abs(self.hiddenLayer.W).sum()
             + abs(self.logRegressionLayer.W).sum()
         )
 
         # square of L2 norm ; one regularization option is to enforce
         # square of L2 norm to be small
         self.L2_sqr = (
-            (self.hiddenLayer2.W ** 2).sum()
+            (self.hiddenLayer.W ** 2).sum()
             + (self.logRegressionLayer.W ** 2).sum()
         )
 
@@ -266,16 +264,15 @@ class MLP(object):
 
         # the parameters of the model are the parameters of the two layer it is
         # made out of
-        self.params = self.hiddenLayer0.params + \
-                      self.hiddenLayer1.params + \
-                      self.hiddenLayer2.params + \
-                      self.logRegressionLayer.params
+        self.params = self.hiddenLayer.params + self.logRegressionLayer.params
+                      # self.hiddenLayer1.params + \
+                      # self.hiddenLayer2.params + \
+                      # self.logRegressionLayer.params
                       # self.hiddenLayer3.params + \
                       # self.hiddenLayer4.params + \
                       # self.hiddenLayer5.params + \
                       # self.logRegressionLayer.params
         # end-snippet-3
-
 
 def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
              batch_size=200, n_hidden=10, n_in=40, n_out=6):
@@ -334,7 +331,7 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
     y = T.ivector('y')  # the labels are presented as 1D vector of
                         # [int] labels
 
-    rng = numpy.random.RandomState(1234)
+    rng = np.random.RandomState(1234)
 
     # construct the MLP class
     classifier = MLP(
@@ -419,13 +416,14 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
                            # found
     improvement_threshold = 0.995  # a relative improvement of this much is
                                    # considered significant
+
     validation_frequency = min(n_train_batches, patience / 2)
                                   # go through this many
                                   # minibatches before checking the network
                                   # on the validation set; in this case we
                                   # check every epoch
 
-    best_validation_loss = numpy.inf
+    best_validation_loss = np.inf
     best_iter = 0
     test_score = 0.
     start_time = time.clock()
@@ -438,6 +436,11 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
         for minibatch_index in xrange(n_train_batches):
 
             minibatch_avg_cost = train_model(minibatch_index)
+            # minibatch_avg_cost.get
+            hessianMatrix = theano.gradient.hessian(minibatch_avg_cost)
+            #
+            print hessianMatrix.shape
+            pause()
             # iteration number
             iter = (epoch - 1) * n_train_batches + minibatch_index
 
@@ -445,7 +448,7 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
                 # compute zero-one loss on validation set
                 validation_losses = [validate_model(i) for i
                                      in xrange(n_valid_batches)]
-                this_validation_loss = numpy.mean(validation_losses)
+                this_validation_loss = np.mean(validation_losses)
 
                 print(
                     'epoch %i, minibatch %i/%i, validation error %f %%' %
@@ -472,7 +475,7 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
                     # test it on the test set
                     test_losses = [test_model(i) for i
                                    in xrange(n_test_batches)]
-                    test_score = numpy.mean(test_losses)
+                    test_score = np.mean(test_losses)
 
                     print(('     epoch %i, minibatch %i/%i, test error of '
                            'best model %f %%') %
@@ -493,4 +496,7 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
 
     return best_validation_loss, best_iter
 
+
+
 test_mlp()
+
