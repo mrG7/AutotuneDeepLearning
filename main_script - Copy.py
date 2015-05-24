@@ -149,7 +149,7 @@ class HiddenLayer(object):
 
 # start-snippet-2
 class MLP(object):
-    """Multi-Layer Prerceptron Class
+    """Multi-Layer Perceptron Class
 
     A multilayer perceptron is a feedforward artificial neural network model
     that has one layer or more of hidden units and nonlinear activations.
@@ -159,7 +159,7 @@ class MLP(object):
     class).
     """
 
-    def __init__(self, rng, input, n_in, n_hidden, n_out, Wnew = None):
+    def __init__(self, rng, input, n_in, n_hidden, n_out):
         """Initialize the parameters for the multilayer perceptron
 
         :type rng: numpy.random.RandomState
@@ -181,28 +181,58 @@ class MLP(object):
         which the labels lie
 
         """
-        # Wnew_reshaped = Wnew.reshape((n_in,n_hidden))
 
         # Since we are dealing with a one hidden layer MLP, this will translate
         # into a HiddenLayer with a tanh activation function connected to the
         # LogisticRegression layer; the activation function can be replaced by
         # sigmoid or any other nonlinear function
-
-        if Wnew == None:
-            temp = Wnew
-        else:
-            temp = Wnew.reshape((n_in,n_hidden))
-
-        print type(temp)
-
         self.hiddenLayer = HiddenLayer(
             rng=rng,
             input=input,
             n_in=n_in,
             n_out=n_hidden,
-            activation=T.tanh,
-            W=temp
+            activation=T.tanh
         )
+
+        # self.hiddenLayer1 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer0.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
+        #
+        # self.hiddenLayer2 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer1.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
+
+        # self.hiddenLayer3 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer2.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
+        #
+        # self.hiddenLayer4 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer3.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
+        #
+        # self.hiddenLayer5 = HiddenLayer(
+        #     rng=rng,
+        #     input=self.hiddenLayer4.output,
+        #     n_in=n_hidden,
+        #     n_out=n_hidden,
+        #     activation=T.tanh
+        # )
 
         # The logistic regression layer gets as input the hidden units
         # of the hidden layer
@@ -238,6 +268,13 @@ class MLP(object):
         # the parameters of the model are the parameters of the two layer it is
         # made out of
         self.params = self.hiddenLayer.params + self.logRegressionLayer.params
+                      # self.hiddenLayer1.params + \
+                      # self.hiddenLayer2.params + \
+                      # self.logRegressionLayer.params
+                      # self.hiddenLayer3.params + \
+                      # self.hiddenLayer4.params + \
+                      # self.hiddenLayer5.params + \
+                      # self.logRegressionLayer.params
         # end-snippet-3
 
 def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
@@ -296,7 +333,6 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
     x = T.matrix('x')  # the data is presented as rasterized images
     y = T.ivector('y')  # the labels are presented as 1D vector of
                         # [int] labels
-    print type(y), type(x)
 
     rng = np.random.RandomState(1234)
 
@@ -398,120 +434,82 @@ def test_mlp(learning_rate=0.1, L1_reg=0.01, L2_reg=0.0001, n_epochs=1000,
     epoch = 0
     done_looping = False
 
-    # while (epoch < n_epochs) and (not done_looping):
-    #     epoch = epoch + 1
-    #     for minibatch_index in xrange(n_train_batches):
-    #
-    #         minibatch_avg_cost = train_model(minibatch_index)
-    #
-    #         iter = (epoch - 1) * n_train_batches + minibatch_index
-    #
-    #         if (iter + 1) % validation_frequency == 0:
-    #             # compute zero-one loss on validation set
-    #             validation_losses = [validate_model(i) for i
-    #                                  in xrange(n_valid_batches)]
-    #             this_validation_loss = np.mean(validation_losses)
-    #
-    #             print(
-    #                 'epoch %i, minibatch %i/%i, validation error %f %%' %
-    #                 (
-    #                     epoch,
-    #                     minibatch_index + 1,
-    #                     n_train_batches,
-    #                     this_validation_loss * 100.
-    #                 )
-    #             )
-    #
-    #             # if we got the best validation score until now
-    #             if this_validation_loss < best_validation_loss:
-    #                 #improve patience if loss improvement is good enough
-    #                 if (
-    #                     this_validation_loss < best_validation_loss *
-    #                     improvement_threshold
-    #                 ):
-    #                     patience = max(patience, iter * patience_increase)
-    #
-    #                 best_validation_loss = this_validation_loss
-    #                 best_iter = iter
-    #                 best_weights_hidden = classifier.hiddenLayer.W.get_value()
-    #                 best_weights_logReg = classifier.logRegressionLayer.W.get_value()
-    #
-    #                 # test it on the test set
-    #                 test_losses = [test_model(i) for i
-    #                                in xrange(n_test_batches)]
-    #                 test_score = np.mean(test_losses)
-    #
-    #                 print(('     epoch %i, minibatch %i/%i, test error of '
-    #                        'best model %f %%') %
-    #                       (epoch, minibatch_index + 1, n_train_batches,
-    #                        test_score * 100.))
-    #
-    #         if patience <= iter:
-    #             done_looping = True
-    #             break
-    #
-    # end_time = time.clock()
-    # print(('Optimization complete. Best validation score of %f %% '
-    #        'obtained at iteration %i, with test performance %f %%') %
-    #       (best_validation_loss * 100., best_iter + 1, test_score * 100.))
-    # print("Final weights of the hidden layer:")
-    # print(best_weights_hidden)
-    # save_to_file([best_weights_hidden, best_weights_logReg], "best_weights.pkl")
-    # print >> sys.stderr, ('The code for file ' +
-    #                       os.path.split(__file__)[1] +
-    #                       ' ran for %.2fm' % ((end_time - start_time) / 60.))
+    while (epoch < n_epochs) and (not done_looping):
+        epoch = epoch + 1
+        for minibatch_index in xrange(n_train_batches):
 
-    best_weights_hidden, best_weights_logReg = load_from_file("best_weights.pkl")
+            minibatch_avg_cost = theano.shared(train_model(minibatch_index))
+            test_W_flat = theano.shared(classifier.hiddenLayer.W.get_value().flatten())
+            w1 = test_W_flat.reshape((40,10))
+            test = theano.shared(classifier.hiddenLayer.W.get_value().flatten())
 
-    best_W_flatten = best_weights_hidden.flatten()
-    best_w1_flatten_variable = theano.shared(best_W_flatten)
-    best_w1 = best_w1_flatten_variable.reshape((n_in,n_hidden))
+            hessianMatrix = T.hessian(
+                        cost=minibatch_avg_cost,
+                        wrt=test)
+            f = theano.function(inputs=[], outputs=hessianMatrix)
 
-    # classifier.hiddenLayer.W.set_value(best_weights_hidden)
-    # classifier.logRegressionLayer.W.set_value(best_weights_logReg)
+            print f()
 
-    new_classifier = MLP(
-        rng=rng,
-        input=x,
-        n_in=n_in, # 40
-        n_hidden=n_hidden, # 10
-        n_out=n_out, # 6
-        Wnew=best_w1_flatten_variable
-    )
+            pause()
 
-    new_cost = (
-        new_classifier.negative_log_likelihood(y)
-        + L1_reg * classifier.L1
-        + L2_reg * classifier.L2_sqr
-    )
+            iter = (epoch - 1) * n_train_batches + minibatch_index
 
-    new_gparams = [T.grad(new_cost, param) for param in new_classifier.params]
+            if (iter + 1) % validation_frequency == 0:
+                # compute zero-one loss on validation set
+                validation_losses = [validate_model(i) for i
+                                     in xrange(n_valid_batches)]
+                this_validation_loss = np.mean(validation_losses)
 
-    new_updates = [
-        (param, param - learning_rate * new_gparams)
-        for param, new_gparams in zip(new_classifier.params, new_gparams)
-    ]
+                print(
+                    'epoch %i, minibatch %i/%i, validation error %f %%' %
+                    (
+                        epoch,
+                        minibatch_index + 1,
+                        n_train_batches,
+                        this_validation_loss * 100.
+                    )
+                )
 
-    new_train_model = theano.function(
-        inputs=[index],
-        outputs=new_cost,
-        updates=new_updates,
-        givens={
-            x: train_set_x[index * batch_size: (index + 1) * batch_size],
-            y: train_set_y[index * batch_size: (index + 1) * batch_size]
-        }
-    )
+                # if we got the best validation score until now
+                if this_validation_loss < best_validation_loss:
+                    #improve patience if loss improvement is good enough
+                    if (
+                        this_validation_loss < best_validation_loss *
+                        improvement_threshold
+                    ):
+                        patience = max(patience, iter * patience_increase)
 
-    new_avg_cost = new_train_model(0)
-    print new_avg_cost
-    # new_cost = theano.shared(train_model(0)) # 0-th batch only
-    # gradient = T.grad(cost=new_cost, wrt=best_w1)
-    hessian = T.hessian(cost=new_cost, wrt=best_w1_flatten_variable)
-    hessianFunc = theano.function(inputs=[], outputs=hessian, allow_input_downcast=True)
+                    best_validation_loss = this_validation_loss
+                    best_iter = iter
+                    best_weights = classifier.hiddenLayer.W.get_value()
 
-    print "HessianFunc: "
-    print hessianFunc
+                    # test it on the test set
+                    test_losses = [test_model(i) for i
+                                   in xrange(n_test_batches)]
+                    test_score = np.mean(test_losses)
 
-    return best_validation_loss, best_iter, best_weights_hidden
+                    print(('     epoch %i, minibatch %i/%i, test error of '
+                           'best model %f %%') %
+                          (epoch, minibatch_index + 1, n_train_batches,
+                           test_score * 100.))
+
+            if patience <= iter:
+                done_looping = True
+                break
+
+    end_time = time.clock()
+    print(('Optimization complete. Best validation score of %f %% '
+           'obtained at iteration %i, with test performance %f %%') %
+          (best_validation_loss * 100., best_iter + 1, test_score * 100.))
+    print("Final weights of the hidden layer:")
+    print(best_weights)
+    print >> sys.stderr, ('The code for file ' +
+                          os.path.split(__file__)[1] +
+                          ' ran for %.2fm' % ((end_time - start_time) / 60.))
+
+    return best_validation_loss, best_iter, best_weights
+
+
 
 test_mlp()
+

@@ -136,13 +136,14 @@ def modify_W_matrix(W_matrix, vec_of_neurons):
 
 #TODO: calc hessian Matrix - theano.gradient.hessian()
 
+# Generate population of vectors for further processing
 A_set_of_nnets = gen_vects_to_mut(6)
 print "Full generation:"
 print A_set_of_nnets
 
-#TODO: calc errors for every generation
+#TODO: calc errors for every generation (lagranges)
 
-#TODO: pass the array of errors
+#TODO: pass the array of errors (cost, negative_log_likelihood)
 
 inds = gen_subset_F([1,2,3,5,7,9]) # pass the array of errors for every (sum of lagrangians)
 F_new_subset = cross_mutate(A_set_of_nnets[inds])
@@ -154,8 +155,8 @@ test_W_matrix = np.ones(shape =(6,6))
 print "\nInitial weight matrix:"
 print test_W_matrix
 
+error_results = []
 # print F_new_subset[0][0]
-#TODO: make a cycle through all generations in the population
 for i in xrange(len(F_new_subset)):
     for j in xrange(2):
 
@@ -165,6 +166,10 @@ for i in xrange(len(F_new_subset)):
         pause()
         #TODO: initiate network with modified_W
         #TODO: calc the error function for every generation
+        # error_cur_vector = 0.5 # CALCULATION!!!
+        # error_results.append(error_cur_vector)
+
+# val, idx = min((val, idx) for (idx, val) in enumerate(my_list))
 
 #TODO: find the minimum value of the error function and the corresponding neurons vector
 

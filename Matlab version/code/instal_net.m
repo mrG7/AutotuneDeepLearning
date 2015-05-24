@@ -1,0 +1,11 @@
+function [NET,options]= instal_net(nin,nh,nout,cycles)
+NET=mlp(nin,nh,nout,'softmax');
+NET.nps = (nin+nout) *nh;
+NET.strw1 = ones(nin, nh); 
+NET.strw2 = ones(nh, nout);
+NET.strb1=ones(1,nh);
+NET.eta = 0.0000000002;
+NET.ncycles=cycles;
+options = zeros(1,18);
+options(1) = 0;			% This provides NO display of error values.
+options(14) = cycles;
